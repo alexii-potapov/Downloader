@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace Downloader.Utils
 {
@@ -10,9 +7,19 @@ namespace Downloader.Utils
     {
         public static string[] GetLinks(string path)
         {
-            var list = System.IO.File.ReadAllLines(path);
-
-            return list;
+            try
+            {
+                using (var sr = new StreamReader(path))
+                {
+                    var line = sr.ReadToEnd();
+                    var links = line.Split('\n');
+                    return links;
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Файл c сылками не может быть прочитан");
+            }
         }
     }
 }
