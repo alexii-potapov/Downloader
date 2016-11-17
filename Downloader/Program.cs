@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Downloader.Models;
 using Downloader.Utils;
 
@@ -10,7 +12,6 @@ namespace Downloader
     {
         private static void Main(string[] arguments)
         {
-
             DownloadTask downloadTask;
             try
             {
@@ -25,29 +26,32 @@ namespace Downloader
             //Todo 
             //CreateFolder downloadTask.OutputFolder
 
-            var result =StartDownload(downloadTask);
+            var result = StartDownload(downloadTask);
 
             if (result)
             {
                 Console.WriteLine("Загрузка завершена успешно");
             }
-
-
         }
 
         private static bool StartDownload(DownloadTask downloadTask)
         {
-            WebClient myWebClient = new WebClient();
+            IList<Task> tasks = new List<Task>();
 
             foreach (var link in downloadTask.Links)
             {
-                var downloadPath = downloadTask.OutputFolder + '\\' + link.Split('/').Last();
-
-                myWebClient.DownloadFile(link, downloadPath);
+                tasks.Add(Task.Factory.StartNew(() => DownloadLink(downloadTask.OutputFolder, link.Url, link.FileName)));
             }
+            Task.WaitAll(tasks.ToArray());
 
             return true;
+        }
 
+        private static void DownloadLink(string folder, string url, string fileName)
+        {
+            var webClient = new WebClient();
+            var downloadPath = folder + '\\' + fileName;
+            webClient.DownloadFile(url, downloadPath);
         }
     }
 }

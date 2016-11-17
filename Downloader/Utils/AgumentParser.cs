@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Downloader.Models;
 
 namespace Downloader.Utils
@@ -22,7 +19,7 @@ namespace Downloader.Utils
 
             var threadCount = 0;
             var limitRate = 0;
-            string[] links = { "" };
+            IList<Link> links = new List<Link>();
             var outputFolder = "";
 
 
@@ -41,7 +38,6 @@ namespace Downloader.Utils
                         catch (Exception)
                         {
                             throw new Exception("Неврно указан параметр числа потоков");
-                            ;
                         }
                         break;
                     case "-l":
@@ -52,12 +48,10 @@ namespace Downloader.Utils
                         catch (Exception)
                         {
                             throw new Exception("Неврно указан параметр ограничения по скорости");
-                            ;
                         }
                         break;
                     case "-f":
                         links = FileReader.GetLinks(value);
-                        ;
                         break;
                     case "-o":
                         outputFolder = value;
