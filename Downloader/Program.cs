@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 using Downloader.Models;
 using Downloader.Utils;
@@ -16,6 +13,7 @@ namespace Downloader
     internal class Program
     {
         private static readonly Stopwatch Stopwatch = new Stopwatch();
+        private static long _traffic;
 
         private static void Main(string[] arguments)
         {
@@ -38,7 +36,7 @@ namespace Downloader
 
             var elapsedTime = Stopwatch.ElapsedMilliseconds/1000;
 
-            Console.WriteLine($"Загрузка завершена успешно. Время загрузки: {elapsedTime}");
+            Console.WriteLine($"Загрузка завершена успешно. \nВремя загрузки: {elapsedTime} секунд. \nЗагружено: {_traffic} байт.");
         }
 
         private static void Download(DownloadTask downloadTask)
@@ -52,6 +50,9 @@ namespace Downloader
             var webClient = new WebClient();
             var downloadPath = Path.Combine(folder, fileNames.First());
             webClient.DownloadFile(url, downloadPath);
+
+            var fileSize= new FileInfo(downloadPath).Length;
+            _traffic = _traffic + fileSize;
 
             if (fileNames.Count > 1)
             {
