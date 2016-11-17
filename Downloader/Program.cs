@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using Downloader.Models;
@@ -15,8 +14,6 @@ namespace Downloader
 
         private static void Main(string[] arguments)
         {
-            Stopwatch.Start();
-            
             DownloadTask downloadTask;
             try
             {
@@ -27,28 +24,22 @@ namespace Downloader
                 Console.WriteLine(ex.Message);
                 return;
             }
-            
-            var result = StartDownload(downloadTask);
-            Stopwatch.Stop();
-            var elapsedTime = Stopwatch.ElapsedMilliseconds/1000;
-            if (result)
-            {
 
-                Console.WriteLine($"Загрузка завершена успешно. Время загрузки: {elapsedTime}");
-            }
+            Directory.CreateDirectory(downloadTask.OutputFolder);
+
+            Stopwatch.Start();
+            Download(downloadTask);
+            Stopwatch.Stop();
+
+            var elapsedTime = Stopwatch.ElapsedMilliseconds/1000;
+
+            Console.WriteLine($"Загрузка завершена успешно. Время загрузки: {elapsedTime}");
         }
 
-        private static bool StartDownload(DownloadTask downloadTask)
+        private static void Download(DownloadTask downloadTask)
         {
-            IList<Task> tasks = new List<Task>();
-
-            foreach (var link in downloadTask.Links)
-            {
-                tasks.Add(Task.Factory.StartNew(() => DownloadLink(downloadTask.OutputFolder, link.Url, link.FileName)));
-            }
-            Task.WaitAll(tasks.ToArray());
-
-            return true;
+            Parallel.ForEach(downloadTask.Links, new ParallelOptions {MaxDegreeOfParallelism = downloadTask.LimitRate},
+                link => DownloadLink(downloadTask.OutputFolder, link.Url, link.FileName));
         }
 
         private static void DownloadLink(string folder, string url, string fileName)
