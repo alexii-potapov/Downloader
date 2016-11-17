@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace Downloader.Utils
 {
@@ -11,8 +12,10 @@ namespace Downloader.Utils
             {
                 using (var sr = new StreamReader(path))
                 {
-                    var line = sr.ReadToEnd();
-                    var links = line.Split('\n');
+                    //Todo
+                    //Удалить пустые строки
+                    var line = sr.ReadToEnd().Replace("\r", String.Empty); 
+                    var links = line.Split('\n').Where((s => s!="")).ToArray();
                     return links;
                 }
             }
