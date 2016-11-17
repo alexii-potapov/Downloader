@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Downloader.Models;
 
@@ -19,7 +20,7 @@ namespace Downloader.Utils
 
             var threadCount = 0;
             var limitRate = 0;
-            IList<Link> links = new List<Link>();
+            ConcurrentDictionary<string, IList<string>> links = new ConcurrentDictionary<string, IList<string>>();
             var outputFolder = "";
 
 

@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
 using Downloader.Models;
 using Downloader.Utils;
@@ -39,14 +44,30 @@ namespace Downloader
         private static void Download(DownloadTask downloadTask)
         {
             Parallel.ForEach(downloadTask.Links, new ParallelOptions {MaxDegreeOfParallelism = downloadTask.LimitRate},
-                link => DownloadLink(downloadTask.OutputFolder, link.Url, link.FileName));
+                link => DownloadLink(downloadTask.OutputFolder, link.Key, link.Value));
         }
 
-        private static void DownloadLink(string folder, string url, string fileName)
+        private static void DownloadLink(string folder,  string url, IList<string> fileNames)
         {
             var webClient = new WebClient();
-            var downloadPath = $"{folder}\\{fileName}";
+            var downloadPath = Path.Combine(folder, fileNames.First());
             webClient.DownloadFile(url, downloadPath);
+
+            if (fileNames.Count > 1)
+            {
+                for (var i = 1; i < fileNames.Count; i++)
+                {
+                    try
+                    {
+                        var copyPath = Path.Combine(folder, fileNames[i]);
+                        File.Copy(downloadPath, copyPath, true);
+                    }
+                    catch (IOException copyError)
+                    {
+                        Console.WriteLine(copyError.Message);
+                    }
+                }
+            }
         }
     }
 }

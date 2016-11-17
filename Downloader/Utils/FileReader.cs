@@ -1,28 +1,44 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using Downloader.Models;
 
 namespace Downloader.Utils
 {
     public static class FileReader
     {
-        public static IList<Link> GetLinks(string path)
+        public static ConcurrentDictionary<string, IList<string>> GetLinks(string path)
         {
             try
             {
                 using (var sr = new StreamReader(path))
                 {
-                    //Todo
-                    //Удалить пустые строки
                     var lines = sr.ReadToEnd().Replace("\r", string.Empty).Split('\n').Where(s => s != "");
 
-                    IList<Link> links = new List<Link>();
+                  
+                    ConcurrentDictionary<string, IList<string>> links = new ConcurrentDictionary<string, IList<string>>();
+
                     foreach (var line in lines)
                     {
                         var linkParams = line.Split(' ');
-                        links.Add(new Link(linkParams[0], linkParams[1]));
+                        var url = linkParams[0];
+                        var fileName = linkParams[1];
+
+                        links.AddOrUpdate(
+                            url, 
+                            (key) => new List<string> { fileName } ,
+                            (key, values) =>
+                                {
+                                    if (!values.Contains(fileName))
+                                    {
+                                        values.Add(fileName);
+                                    }
+                                    return values;
+                                });
                     }
                     return links;
                 }

@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Downloader.Models
 {
     public class DownloadTask
     {
-        public DownloadTask(int threadNumber, int limitRate, IList<Link> links, string outputFolder)
+        public DownloadTask(int threadNumber, int limitRate, ConcurrentDictionary<string, IList<string>> links, string outputFolder)
         {
             Threads = threadNumber;
             LimitRate = limitRate;
@@ -14,7 +15,7 @@ namespace Downloader.Models
 
         public int Threads { get; private set; }
         public int LimitRate { get; private set; }
-        public IList<Link> Links { get; private set; }
+        public ConcurrentDictionary<string, IList<string>> Links { get; private set; }
         public string OutputFolder { get; private set; }
     }
 }
