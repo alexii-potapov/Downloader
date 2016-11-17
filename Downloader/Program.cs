@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -10,8 +11,12 @@ namespace Downloader
 {
     internal class Program
     {
+        private static readonly Stopwatch Stopwatch = new Stopwatch();
+
         private static void Main(string[] arguments)
         {
+            Stopwatch.Start();
+            
             DownloadTask downloadTask;
             try
             {
@@ -22,15 +27,14 @@ namespace Downloader
                 Console.WriteLine(ex.Message);
                 return;
             }
-
-            //Todo 
-            //CreateFolder downloadTask.OutputFolder
-
+            
             var result = StartDownload(downloadTask);
-
+            Stopwatch.Stop();
+            var elapsedTime = Stopwatch.ElapsedMilliseconds/1000;
             if (result)
             {
-                Console.WriteLine("Загрузка завершена успешно");
+
+                Console.WriteLine($"Загрузка завершена успешно. Время загрузки: {elapsedTime}");
             }
         }
 
@@ -50,7 +54,7 @@ namespace Downloader
         private static void DownloadLink(string folder, string url, string fileName)
         {
             var webClient = new WebClient();
-            var downloadPath = folder + '\\' + fileName;
+            var downloadPath = $"{folder}\\{fileName}";
             webClient.DownloadFile(url, downloadPath);
         }
     }
