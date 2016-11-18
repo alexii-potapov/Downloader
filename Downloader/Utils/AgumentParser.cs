@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Downloader.Models;
 
 namespace Downloader.Utils
@@ -18,8 +20,8 @@ namespace Downloader.Utils
                 throw new Exception("Указаны не все параметры");
             }
 
-            var threadCount = 0;
-            var limitRate = 0;
+            int threadCount=0;
+            long limitRate=0;
             ConcurrentDictionary<string, IList<string>> links = new ConcurrentDictionary<string, IList<string>>();
             var outputFolder = "";
 
@@ -32,24 +34,10 @@ namespace Downloader.Utils
                 switch (parameter)
                 {
                     case "-n":
-                        try
-                        {
-                            threadCount = int.Parse(value);
-                        }
-                        catch (Exception)
-                        {
-                            throw new Exception("Неврно указан параметр числа потоков");
-                        }
+                        threadCount = ParseThreadCount(value);
                         break;
                     case "-l":
-                        try
-                        {
-                            limitRate = int.Parse(value);
-                        }
-                        catch (Exception)
-                        {
-                            throw new Exception("Неврно указан параметр ограничения по скорости");
-                        }
+                        limitRate = ParseLimitRate(value);
                         break;
                     case "-f":
                         links = FileReader.GetLinks(value);
@@ -61,6 +49,49 @@ namespace Downloader.Utils
             }
 
             return new DownloadTask(threadCount, limitRate, links, outputFolder);
+        }
+
+        private static int ParseThreadCount(string value)
+        {
+            int threadCount;
+            try
+            {
+                threadCount = int.Parse(value);
+            }
+            catch (Exception)
+            {
+                throw new Exception("Неверно указан параметр числа потоков");
+            }
+            return threadCount;
+        }
+
+        private static long ParseLimitRate(string value)
+        {
+            var pattern = @"(\d+)([km]?$)";
+            Regex rgx = new Regex(pattern, RegexOptions.IgnoreCase);
+            var match = rgx.Match(value);
+            if (!match.Success)
+            {
+                throw new Exception("Неверно указан параметр ограничения по скорости");
+            }
+
+            var limitRate = long.Parse(match.Groups[1].Value);
+
+            if (match.Groups.Count > 2)
+            {
+                var suffix = match.Groups[2].Value;
+                switch (suffix.ToLower())
+                {
+                    case "k":
+                        limitRate = limitRate*1024;
+                        break;
+                    case "m":
+                        limitRate = limitRate*1024*1024;
+                        break;
+                }
+            }
+
+            return limitRate;
         }
     }
 }

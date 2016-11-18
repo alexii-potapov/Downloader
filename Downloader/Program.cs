@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Downloader.Models;
 using Downloader.Utils;
@@ -14,6 +15,8 @@ namespace Downloader
     {
         private static readonly Stopwatch Stopwatch = new Stopwatch();
         private static long _traffic;
+        private static long _limitRate;
+        private static int _parallelsCount;
 
         private static void Main(string[] arguments)
         {
@@ -28,6 +31,8 @@ namespace Downloader
                 return;
             }
 
+
+            _limitRate = downloadTask.LimitRate;
             Directory.CreateDirectory(downloadTask.OutputFolder);
 
             Stopwatch.Start();
@@ -36,23 +41,54 @@ namespace Downloader
 
             var elapsedTime = Stopwatch.ElapsedMilliseconds/1000;
 
-            Console.WriteLine($"Загрузка завершена успешно. \nВремя загрузки: {elapsedTime} секунд. \nЗагружено: {_traffic} байт.");
+            Console.WriteLine(
+                $"Загрузка завершена успешно. \nВремя загрузки: {elapsedTime} секунд. \nЗагружено: {_traffic} байт.");
+            Console.ReadLine();
         }
 
         private static void Download(DownloadTask downloadTask)
         {
-            Parallel.ForEach(downloadTask.Links, new ParallelOptions {MaxDegreeOfParallelism = downloadTask.LimitRate},
+            _parallelsCount = 0;
+            Parallel.ForEach(downloadTask.Links, new ParallelOptions {MaxDegreeOfParallelism = downloadTask.Threads},
                 link => DownloadLink(downloadTask.OutputFolder, link.Key, link.Value));
         }
 
-        private static void DownloadLink(string folder,  string url, IList<string> fileNames)
+        private static void DownloadLink(string folder, string url, IList<string> fileNames)
         {
-            var webClient = new WebClient();
+            _parallelsCount++;
             var downloadPath = Path.Combine(folder, fileNames.First());
-            webClient.DownloadFile(url, downloadPath);
+            var wr = WebRequest.Create(url);
+            var ws = wr.GetResponse();
+            using (var str = ws.GetResponseStream())
+            {
+                var inBuf = new byte[100000];
+                var bytesReadTotal = 0;
 
-            var fileSize= new FileInfo(downloadPath).Length;
-            _traffic = _traffic + fileSize;
+                using (var fstr = new FileStream(downloadPath, FileMode.Create, FileAccess.Write))
+                {
+                    var limit = 102400;
+
+                    while (true)
+                    {
+                        if (_limitRate != 0 || _limitRate>inBuf.Length*100)
+                        {
+                            Thread.Sleep(10);
+                            limit = (int)(_limitRate / (100 * _parallelsCount));
+                        }
+                        var n = str.Read(inBuf, 0, limit);
+                        if ((n == 0) || (n == -1))
+                        {
+                            break;
+                        }
+                        fstr.Write(inBuf, 0, n);
+                        bytesReadTotal += n;
+                        Console.WriteLine(n);
+                    }
+                }
+                _traffic = _traffic + bytesReadTotal;
+                _parallelsCount--;
+            }
+
 
             if (fileNames.Count > 1)
             {
